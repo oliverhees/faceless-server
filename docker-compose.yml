@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # FFmpeg Video API Service
   ffmpeg-api:
@@ -27,6 +25,22 @@ services:
       - redis
     networks:
       - ffmpeg-network
+      - ai-toolkit_v2_default  # Traefik network (if using Traefik)
+    labels:
+      # Traefik configuration (optional - uncomment and configure if using Traefik)
+      - "traefik.enable=true"
+      # Option 1: With custom domain (requires DNS A record)
+      # - "traefik.http.routers.ffmpeg-api.rule=Host(`api.yourdomain.com`)"
+      # - "traefik.http.routers.ffmpeg-api.entrypoints=websecure"
+      # - "traefik.http.routers.ffmpeg-api.tls.certresolver=myresolver"
+      # Option 2: With path prefix (access via http://your-ip/ffmpeg-api/)
+      - "traefik.http.routers.ffmpeg-api.rule=PathPrefix(`/ffmpeg-api`)"
+      - "traefik.http.routers.ffmpeg-api.entrypoints=web"
+      - "traefik.http.middlewares.ffmpeg-api-strip.stripprefix.prefixes=/ffmpeg-api"
+      - "traefik.http.routers.ffmpeg-api.middlewares=ffmpeg-api-strip"
+      # Service configuration
+      - "traefik.http.services.ffmpeg-api.loadbalancer.server.port=3000"
+      - "traefik.docker.network=ai-toolkit_v2_default"
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/health"]
       interval: 30s
@@ -61,3 +75,5 @@ volumes:
 networks:
   ffmpeg-network:
     driver: bridge
+  ai-toolkit_v2_default:
+    external: true  # Connect to existing Traefik network

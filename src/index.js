@@ -49,12 +49,21 @@ app.use(
   })
 );
 
+// Serve static files from storage (no authentication required)
+const path = require('path');
+app.use('/files', express.static(path.join(__dirname, '../storage/uploads'), {
+  maxAge: '12h',
+  setHeaders: (res, filePath) => {
+    res.setHeader('Content-Disposition', 'attachment');
+  }
+}));
+
 /**
  * API Key Authentication Middleware
  */
 function authenticateApiKey(req, res, next) {
-  // Skip auth for health check
-  if (req.path === '/health') {
+  // Skip auth for health check and file downloads
+  if (req.path === '/health' || req.path.startsWith('/files')) {
     return next();
   }
 
