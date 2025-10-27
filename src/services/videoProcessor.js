@@ -13,6 +13,7 @@ const storage = require('../config/storage');
 const templateEngine = require('./templateEngine');
 const { buildFFmpegCommand } = require('./ffmpegBuilder');
 const { jobManager, JobStatus } = require('./jobManager');
+const webhookService = require('./webhookService');
 
 const execAsync = promisify(exec);
 
@@ -32,32 +33,33 @@ class VideoProcessor {
    * @returns {Promise<Object>} - Job info
    */
   async processVideo(request) {
-    const { template, variables, async = true, custom_config } = request;
+    const { template, variables, async = true, custom_config, user_id } = request;
 
     // Create job
     const jobId = await jobManager.createJob({
       template,
       variables,
       custom_config,
+      user_id,
     });
 
     // Process asynchronously
     if (async) {
-      this.renderVideoAsync(jobId, template, variables, custom_config);
+      this.renderVideoAsync(jobId, template, variables, custom_config, user_id);
       return {
         job_id: jobId,
         status: JobStatus.QUEUED,
       };
     } else {
       // Process synchronously (wait for completion)
-      return this.renderVideoSync(jobId, template, variables, custom_config);
+      return this.renderVideoSync(jobId, template, variables, custom_config, user_id);
     }
   }
 
   /**
    * Render video asynchronously (fire and forget)
    */
-  async renderVideoAsync(jobId, template, variables, customConfig) {
+  async renderVideoAsync(jobId, template, variables, customConfig, userId) {
     try {
       // Wait if max concurrent jobs reached
       await this.waitForSlot();
@@ -73,6 +75,24 @@ class VideoProcessor {
         duration: result.duration,
         file_size: result.file_size,
       });
+
+      // Deduct credits after successful render (non-blocking)
+      if (userId) {
+        webhookService.deductCredits({
+          user_id: userId,
+          template_id: template,
+          job_id: jobId,
+          credits_to_deduct: 10, // TODO: Make this configurable per template
+          video_url: result.video_url,
+          duration: result.duration,
+        }).catch((err) => {
+          logger.warn('Failed to deduct credits after render', {
+            jobId,
+            userId,
+            error: err.message,
+          });
+        });
+      }
     } catch (error) {
       logger.logError(error, { jobId, template });
       await jobManager.failJob(jobId, error.message);
@@ -85,7 +105,7 @@ class VideoProcessor {
   /**
    * Render video synchronously (wait for result)
    */
-  async renderVideoSync(jobId, template, variables, customConfig) {
+  async renderVideoSync(jobId, template, variables, customConfig, userId) {
     try {
       await this.waitForSlot();
       this.activeJobs.set(jobId, { started_at: Date.now() });
@@ -96,6 +116,24 @@ class VideoProcessor {
         duration: result.duration,
         file_size: result.file_size,
       });
+
+      // Deduct credits after successful render (non-blocking)
+      if (userId) {
+        webhookService.deductCredits({
+          user_id: userId,
+          template_id: template,
+          job_id: jobId,
+          credits_to_deduct: 10, // TODO: Make this configurable per template
+          video_url: result.video_url,
+          duration: result.duration,
+        }).catch((err) => {
+          logger.warn('Failed to deduct credits after render', {
+            jobId,
+            userId,
+            error: err.message,
+          });
+        });
+      }
 
       return {
         job_id: jobId,

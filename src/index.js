@@ -12,11 +12,13 @@ const logger = require('./utils/logger');
 const fileManager = require('./utils/fileManager');
 const storage = require('./config/storage');
 const { jobManager } = require('./services/jobManager');
+const communityTemplateService = require('./services/communityTemplateService');
 
 // Import routes
 const renderRoute = require('./routes/render');
 const statusRoute = require('./routes/status');
 const templatesRoute = require('./routes/templates');
+const communityTemplatesRoute = require('./routes/communityTemplates');
 const healthRoute = require('./routes/health');
 
 // Create Express app
@@ -102,17 +104,25 @@ app.use('/health', healthRoute);
 app.use('/render', renderRoute);
 app.use('/status', statusRoute);
 app.use('/templates', templatesRoute);
+app.use('/community-templates', communityTemplatesRoute);
 
 // Root endpoint
 app.get('/', (req, res) => {
   res.json({
     name: 'FFmpeg Video API',
     version: '1.0.0',
-    description: 'Automated video rendering service',
+    description: 'Automated video rendering service with credit system',
     endpoints: {
       render: 'POST /render',
       status: 'GET /status/:job_id',
       templates: 'GET /templates',
+      community_templates: {
+        list: 'GET /community-templates',
+        get: 'GET /community-templates/:id',
+        create: 'POST /community-templates',
+        update: 'PUT /community-templates/:id',
+        delete: 'DELETE /community-templates/:id',
+      },
       health: 'GET /health',
     },
     documentation: 'https://github.com/yourusername/ffmpeg-video-api',
@@ -167,6 +177,10 @@ async function initializeServer() {
     await jobManager.init();
     logger.info('Job manager initialized');
 
+    // Initialize community template service
+    await communityTemplateService.init();
+    logger.info('Community template service initialized');
+
     // Start server
     const server = app.listen(config.port, config.host, () => {
       logger.info('FFmpeg Video API started', {
@@ -183,6 +197,8 @@ async function initializeServer() {
       console.log(`   POST   /render`);
       console.log(`   GET    /status/:job_id`);
       console.log(`   GET    /templates`);
+      console.log(`   GET    /community-templates`);
+      console.log(`   POST   /community-templates`);
       console.log(`   GET    /health`);
       console.log(`\n✨ Ready to render videos!\n`);
     });
