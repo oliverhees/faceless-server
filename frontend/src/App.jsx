@@ -24,11 +24,6 @@ function App() {
 
   return (
     <div className="app">
-      <header className="app-header">
-        <h1>🎬 FFmpeg Template Builder</h1>
-        <p>Create custom video templates visually</p>
-      </header>
-
       {view === 'list' ? (
         <TemplateList
           onCreateNew={handleCreateNew}

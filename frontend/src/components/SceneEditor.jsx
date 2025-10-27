@@ -156,6 +156,12 @@ export default function SceneEditor({ template, onBack }) {
         </div>
         <div className="flex gap-2">
           <button
+            onClick={addScene}
+            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 rounded text-sm flex items-center gap-1.5 transition-colors">
+            <Plus size={14} />
+            Add Scene
+          </button>
+          <button
             onClick={exportJSON}
             className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded text-sm flex items-center gap-1.5 transition-colors">
             <Download size={14} />
@@ -264,13 +270,6 @@ export default function SceneEditor({ template, onBack }) {
             </div>
           ))}
         </div>
-
-        {/* Floating Add Button */}
-        <button
-          onClick={addScene}
-          className="fixed right-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-blue-600 hover:bg-blue-700 rounded-full flex items-center justify-center shadow-lg transition-all hover:scale-110 z-10">
-          <Plus size={24} />
-        </button>
       </div>
 
       {/* Fixed Bottom Panel */}
