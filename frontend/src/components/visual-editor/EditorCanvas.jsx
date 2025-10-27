@@ -70,7 +70,8 @@ function EditorCanvas({ scene, width, height, selectedLayerId, onSelectLayer, on
 
     const canvas = fabricCanvasRef.current
     canvas.clear()
-    canvas.setBackgroundColor('#ffffff', canvas.renderAll.bind(canvas))
+    canvas.backgroundColor = '#ffffff'
+    canvas.renderAll()
 
     scene.layers.forEach(layer => {
       if (!layer.visible) return
@@ -79,7 +80,7 @@ function EditorCanvas({ scene, width, height, selectedLayerId, onSelectLayer, on
 
       switch (layer.type) {
         case 'text':
-          fabricObject = new fabric.Text(layer.properties.text || 'Text', {
+          fabricObject = new fabric.Textbox(layer.properties.text || 'Text', {
             left: layer.properties.x,
             top: layer.properties.y,
             fontSize: layer.properties.fontSize,
@@ -145,25 +146,29 @@ function EditorCanvas({ scene, width, height, selectedLayerId, onSelectLayer, on
 
         case 'image':
           if (layer.properties.src) {
-            fabric.Image.fromURL(layer.properties.src, (img) => {
-              img.set({
-                left: layer.properties.x,
-                top: layer.properties.y,
-                scaleX: layer.properties.width / img.width,
-                scaleY: layer.properties.height / img.height,
-                angle: layer.properties.rotation,
-                opacity: layer.properties.opacity,
-                selectable: !layer.locked,
-                lockMovementX: layer.locked,
-                lockMovementY: layer.locked,
-                lockRotation: layer.locked,
-                lockScalingX: layer.locked,
-                lockScalingY: layer.locked
+            fabric.FabricImage.fromURL(layer.properties.src, { crossOrigin: 'anonymous' })
+              .then((img) => {
+                img.set({
+                  left: layer.properties.x,
+                  top: layer.properties.y,
+                  scaleX: layer.properties.width / (img.width || 1),
+                  scaleY: layer.properties.height / (img.height || 1),
+                  angle: layer.properties.rotation,
+                  opacity: layer.properties.opacity,
+                  selectable: !layer.locked,
+                  lockMovementX: layer.locked,
+                  lockMovementY: layer.locked,
+                  lockRotation: layer.locked,
+                  lockScalingX: layer.locked,
+                  lockScalingY: layer.locked
+                })
+                img.layerId = layer.id
+                canvas.add(img)
+                canvas.renderAll()
               })
-              img.layerId = layer.id
-              canvas.add(img)
-              canvas.renderAll()
-            }, { crossOrigin: 'anonymous' })
+              .catch((err) => {
+                console.error('Failed to load image:', err)
+              })
             return
           }
           break
@@ -189,7 +194,7 @@ function EditorCanvas({ scene, width, height, selectedLayerId, onSelectLayer, on
           })
 
           // Add video label
-          const videoLabel = new fabric.Text('VIDEO', {
+          const videoLabel = new fabric.Textbox('VIDEO', {
             left: layer.properties.x + layer.properties.width / 2,
             top: layer.properties.y + layer.properties.height / 2,
             fontSize: 20,
