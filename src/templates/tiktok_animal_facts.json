@@ -1,0 +1,69 @@
+{
+  "template_name": "tiktok_animal_facts",
+  "category": "tiktok",
+  "description": "Vertical TikTok video with animal facts, transitions, voiceover, and background music",
+  "variables": [
+    "animal",
+    "fact",
+    "video1",
+    "video2",
+    "voiceover",
+    "background_music"
+  ],
+  "structure": {
+    "output": {
+      "resolution": "1080x1920",
+      "fps": 30,
+      "format": "mp4"
+    },
+    "clips": [
+      {
+        "src": "{{video1}}",
+        "duration": 5,
+        "transition_out": "fade"
+      },
+      {
+        "src": "{{video2}}",
+        "duration": 5,
+        "transition_out": "fade"
+      }
+    ],
+    "voiceover": {
+      "src": "{{voiceover}}",
+      "volume": 1.0
+    },
+    "audio": {
+      "src": "{{background_music}}",
+      "volume": 0.3,
+      "fade_out": 2
+    },
+    "text_overlays": [
+      {
+        "text": "Did you know?",
+        "start": 0.5,
+        "duration": 2,
+        "position": "top",
+        "font_size": 60,
+        "color": "yellow",
+        "background": "rgba(0,0,0,0.7)"
+      },
+      {
+        "text": "{{fact}}",
+        "start": 1,
+        "duration": 7,
+        "position": "center",
+        "font_size": 70,
+        "color": "white",
+        "background": "rgba(0,0,0,0.6)"
+      },
+      {
+        "text": "Follow for more {{animal}} facts!",
+        "start": 7,
+        "duration": 3,
+        "position": "bottom",
+        "font_size": 50,
+        "color": "yellow"
+      }
+    ]
+  }
+}

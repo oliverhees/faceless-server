@@ -1,0 +1,58 @@
+{
+  "template_name": "lofi_youtube_stream",
+  "category": "youtube",
+  "description": "Horizontal LoFi music stream for YouTube with album art overlay and track information",
+  "variables": [
+    "background_video",
+    "album_art",
+    "music_track",
+    "track_title",
+    "artist_name"
+  ],
+  "structure": {
+    "output": {
+      "resolution": "1920x1080",
+      "fps": 30,
+      "format": "mp4"
+    },
+    "clips": [
+      {
+        "src": "{{background_video}}",
+        "duration": 180,
+        "loop": true
+      }
+    ],
+    "audio": {
+      "src": "{{music_track}}",
+      "volume": 0.8,
+      "fade_out": 3
+    },
+    "text_overlays": [
+      {
+        "text": "{{track_title}}",
+        "start": 0,
+        "duration": 180,
+        "position": "center",
+        "font_size": 80,
+        "color": "white",
+        "background": "rgba(0,0,0,0.5)"
+      },
+      {
+        "text": "by {{artist_name}}",
+        "start": 0,
+        "duration": 180,
+        "position": "bottom",
+        "font_size": 50,
+        "color": "lightgray"
+      },
+      {
+        "text": "LoFi Beats to Study/Relax",
+        "start": 0,
+        "duration": 180,
+        "position": "top",
+        "font_size": 45,
+        "color": "yellow"
+      }
+    ]
+  }
+}

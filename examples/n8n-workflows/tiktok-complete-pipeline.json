@@ -1,0 +1,156 @@
+{
+  "name": "TikTok Complete Pipeline - VEO + ElevenLabs + FFmpeg",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "tiktok-webhook",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "webhookId": "tiktok-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Generate animal fact script\nconst animals = ['Shark', 'Dolphin', 'Octopus', 'Penguin', 'Lion'];\nconst animal = animals[Math.floor(Math.random() * animals.length)];\n\nconst facts = {\n  'Shark': 'Sharks can see in the dark! 🦈',\n  'Dolphin': 'Dolphins sleep with one eye open! 🐬',\n  'Octopus': 'Octopuses have three hearts! 🐙',\n  'Penguin': 'Penguins can jump 6 feet high! 🐧',\n  'Lion': 'Lions sleep 20 hours a day! 🦁'\n};\n\nconst fact = facts[animal];\n\nreturn {\n  animal,\n  fact,\n  script: `Did you know? ${fact} Follow for more amazing animal facts!`\n};"
+      },
+      "name": "Generate Script",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://api.google.com/veo/v1/generate",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleVeoApi",
+        "method": "POST",
+        "jsonParameters": true,
+        "options": {},
+        "bodyParametersJson": "={\n  \"prompt\": \"{{ $json.animal }} in nature, high quality, cinematic\",\n  \"duration\": 5,\n  \"resolution\": \"1080x1920\"\n}"
+      },
+      "name": "VEO Video 1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [650, 200]
+    },
+    {
+      "parameters": {
+        "url": "https://api.google.com/veo/v1/generate",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleVeoApi",
+        "method": "POST",
+        "jsonParameters": true,
+        "options": {},
+        "bodyParametersJson": "={\n  \"prompt\": \"{{ $json.animal }} close-up, amazing detail\",\n  \"duration\": 5,\n  \"resolution\": \"1080x1920\"\n}"
+      },
+      "name": "VEO Video 2",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [650, 400]
+    },
+    {
+      "parameters": {
+        "url": "https://api.elevenlabs.io/v1/text-to-speech",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "elevenLabsApi",
+        "method": "POST",
+        "jsonParameters": true,
+        "options": {},
+        "bodyParametersJson": "={\n  \"text\": \"{{ $json.script }}\",\n  \"voice_id\": \"your-voice-id\",\n  \"model_id\": \"eleven_multilingual_v2\"\n}"
+      },
+      "name": "ElevenLabs Voiceover",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://your-ffmpeg-api:3000/render",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "method": "POST",
+        "jsonParameters": true,
+        "options": {},
+        "bodyParametersJson": "={\n  \"template\": \"tiktok_animal_facts\",\n  \"variables\": {\n    \"animal\": \"{{ $json.animal }}\",\n    \"fact\": \"{{ $json.fact }}\",\n    \"video1\": \"{{ $node['VEO Video 1'].json.video_url }}\",\n    \"video2\": \"{{ $node['VEO Video 2'].json.video_url }}\",\n    \"voiceover\": \"{{ $node['ElevenLabs Voiceover'].json.audio_url }}\",\n    \"background_music\": \"https://storage.example.com/music/upbeat.mp3\"\n  },\n  \"async\": true\n}"
+      },
+      "name": "FFmpeg Render",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1050, 300]
+    },
+    {
+      "parameters": {
+        "amount": 30,
+        "unit": "seconds"
+      },
+      "name": "Wait for Render",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [1250, 300]
+    },
+    {
+      "parameters": {
+        "url": "=http://your-ffmpeg-api:3000/status/{{ $json.job_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "method": "GET",
+        "options": {}
+      },
+      "name": "Check Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1450, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}"
+      },
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1650, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [[{ "node": "Generate Script", "type": "main", "index": 0 }]]
+    },
+    "Generate Script": {
+      "main": [
+        [
+          { "node": "VEO Video 1", "type": "main", "index": 0 },
+          { "node": "VEO Video 2", "type": "main", "index": 0 },
+          { "node": "ElevenLabs Voiceover", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "VEO Video 1": {
+      "main": [[{ "node": "FFmpeg Render", "type": "main", "index": 0 }]]
+    },
+    "VEO Video 2": {
+      "main": [[{ "node": "FFmpeg Render", "type": "main", "index": 0 }]]
+    },
+    "ElevenLabs Voiceover": {
+      "main": [[{ "node": "FFmpeg Render", "type": "main", "index": 0 }]]
+    },
+    "FFmpeg Render": {
+      "main": [[{ "node": "Wait for Render", "type": "main", "index": 0 }]]
+    },
+    "Wait for Render": {
+      "main": [[{ "node": "Check Status", "type": "main", "index": 0 }]]
+    },
+    "Check Status": {
+      "main": [[{ "node": "Respond to Webhook", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {},
+  "staticData": null,
+  "pinData": {},
+  "versionId": "1"
+}

@@ -1,0 +1,59 @@
+{
+  "template_name": "product_ad_15s",
+  "category": "instagram",
+  "description": "Square 15-second product advertisement for Instagram with product showcase, price, and CTA",
+  "variables": [
+    "product_video",
+    "product_name",
+    "price",
+    "cta_text",
+    "background_music"
+  ],
+  "structure": {
+    "output": {
+      "resolution": "1080x1080",
+      "fps": 30,
+      "format": "mp4"
+    },
+    "clips": [
+      {
+        "src": "{{product_video}}",
+        "duration": 15
+      }
+    ],
+    "audio": {
+      "src": "{{background_music}}",
+      "volume": 0.4,
+      "fade_out": 1.5
+    },
+    "text_overlays": [
+      {
+        "text": "{{product_name}}",
+        "start": 1,
+        "duration": 5,
+        "position": "top",
+        "font_size": 80,
+        "color": "white",
+        "background": "rgba(0,0,0,0.7)"
+      },
+      {
+        "text": "Only {{price}}",
+        "start": 6,
+        "duration": 4,
+        "position": "center",
+        "font_size": 100,
+        "color": "yellow",
+        "background": "rgba(0,0,0,0.8)"
+      },
+      {
+        "text": "{{cta_text}}",
+        "start": 11,
+        "duration": 4,
+        "position": "bottom",
+        "font_size": 70,
+        "color": "white",
+        "background": "rgba(255,0,0,0.9)"
+      }
+    ]
+  }
+}

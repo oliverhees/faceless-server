@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  # FFmpeg Video API Service
+  ffmpeg-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ffmpeg-video-api
+    restart: unless-stopped
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      - NODE_ENV=${NODE_ENV:-production}
+      - REDIS_URL=redis://redis:6379
+      - TEMP_DIR=/tmp/ffmpeg-api
+    env_file:
+      - .env
+    volumes:
+      # Persistent storage for uploads (if using local storage)
+      - ./storage/uploads:/app/storage/uploads
+      # Logs
+      - ./logs:/app/logs
+      # Temp files (optional, can use tmpfs for better performance)
+      - ffmpeg_temp:/tmp/ffmpeg-api
+    depends_on:
+      - redis
+    networks:
+      - ffmpeg-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Redis Service (Job Queue & Caching)
+  redis:
+    image: redis:7-alpine
+    container_name: ffmpeg-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - ffmpeg-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+
+volumes:
+  redis_data:
+    driver: local
+  ffmpeg_temp:
+    driver: local
+
+networks:
+  ffmpeg-network:
+    driver: bridge
