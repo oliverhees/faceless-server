@@ -1,0 +1,149 @@
+.component-library {
+  background: white;
+  border-right: 1px solid #eee;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.library-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid #eee;
+}
+
+.library-header h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.25rem;
+  color: #333;
+}
+
+.library-header p {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #999;
+}
+
+.component-list {
+  flex: 1;
+  padding: 1rem;
+}
+
+.component-item {
+  background: #f8f9fa;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  position: relative;
+}
+
+.component-item:hover {
+  border-color: #667eea;
+  background: white;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
+}
+
+.component-icon {
+  background: #667eea;
+  color: white;
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.component-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.component-info h4 {
+  margin: 0 0 0.25rem 0;
+  font-size: 1rem;
+  color: #333;
+}
+
+.component-info p {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #666;
+  line-height: 1.4;
+}
+
+.add-component-btn {
+  background: #667eea;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 50%;
+  flex-shrink: 0;
+  opacity: 0;
+  transform: scale(0.8);
+  transition: all 0.2s;
+}
+
+.component-item:hover .add-component-btn {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.library-footer {
+  padding: 1.5rem;
+  border-top: 1px solid #eee;
+  background: #f8f9fa;
+}
+
+.info-box {
+  background: #fff;
+  border-radius: 8px;
+  padding: 1rem;
+  border: 1px solid #e9ecef;
+}
+
+.info-box h4 {
+  margin: 0 0 0.75rem 0;
+  font-size: 0.875rem;
+  color: #667eea;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.info-box ul {
+  margin: 0;
+  padding-left: 1.25rem;
+  font-size: 0.875rem;
+  color: #666;
+}
+
+.info-box li {
+  margin-bottom: 0.5rem;
+  line-height: 1.4;
+}
+
+.info-box code {
+  background: #f0f0f0;
+  padding: 0.125rem 0.375rem;
+  border-radius: 3px;
+  font-size: 0.8125rem;
+  font-family: 'Courier New', monospace;
+}
+
+@media (max-width: 900px) {
+  .component-library {
+    border-right: none;
+    border-bottom: 1px solid #eee;
+    max-height: 200px;
+  }
+
+  .library-footer {
+    display: none;
+  }
+}
