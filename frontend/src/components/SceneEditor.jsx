@@ -11,6 +11,7 @@ export default function SceneEditor({ template, onBack }) {
   const [voiceOverMode, setVoiceOverMode] = useState(template?.voiceOverMode || 'global') // 'global' or 'scene'
   const [globalVoiceOver, setGlobalVoiceOver] = useState(template?.globalVoiceOver || '')
   const [backgroundAudio, setBackgroundAudio] = useState(template?.backgroundAudio || '')
+  const [aspectRatio, setAspectRatio] = useState(template?.aspectRatio || '9:16') // '9:16' or '16:9'
   const [viewMode, setViewMode] = useState('visual') // 'visual' or 'json'
   const [jsonCode, setJsonCode] = useState('')
   const [jsonError, setJsonError] = useState(null)
@@ -42,10 +43,22 @@ export default function SceneEditor({ template, onBack }) {
     setVoiceOverMode(prev => prev === 'global' ? 'scene' : 'global')
   }
 
+  const toggleAspectRatio = () => {
+    setAspectRatio(prev => prev === '9:16' ? '16:9' : '9:16')
+  }
+
+  const getOutputDimensions = () => {
+    return aspectRatio === '16:9'
+      ? { width: 1920, height: 1080 }
+      : { width: 1080, height: 1920 }
+  }
+
   const syncToJson = () => {
+    const { width, height } = getOutputDimensions()
     const config = {
       template_name: projectName,
       voiceOverMode,
+      aspectRatio,
       scenes: scenes.map((scene, index) => ({
         id: scene.id,
         order: index,
@@ -61,8 +74,8 @@ export default function SceneEditor({ template, onBack }) {
       },
       totalDuration,
       output: {
-        width: 1080,
-        height: 1920,
+        width,
+        height,
         fps: 30
       }
     }
@@ -74,6 +87,7 @@ export default function SceneEditor({ template, onBack }) {
       const config = JSON.parse(jsonCode)
       setProjectName(config.template_name || 'New Video')
       setVoiceOverMode(config.voiceOverMode || 'global')
+      setAspectRatio(config.aspectRatio || '9:16')
       setGlobalVoiceOver(config.globalAudio?.voiceOver || '')
       setBackgroundAudio(config.globalAudio?.background || '')
       setScenes(config.scenes || [])
@@ -116,9 +130,11 @@ export default function SceneEditor({ template, onBack }) {
   ]
 
   const exportJSON = () => {
+    const { width, height } = getOutputDimensions()
     const config = {
       template_name: projectName,
       voiceOverMode,
+      aspectRatio,
       scenes: scenes.map((scene, index) => ({
         id: scene.id,
         order: index,
@@ -134,8 +150,8 @@ export default function SceneEditor({ template, onBack }) {
       },
       totalDuration,
       output: {
-        width: 1080,
-        height: 1920,
+        width,
+        height,
         fps: 30
       }
     }
@@ -157,17 +173,19 @@ export default function SceneEditor({ template, onBack }) {
       setSaving(true)
       setError(null)
 
+      const { width, height } = getOutputDimensions()
       const templateData = {
         template_name: projectName,
         description: `Scene-based video with ${scenes.length} scenes`,
         category: 'ai-video',
         voiceOverMode,
+        aspectRatio,
         scenes,
         globalVoiceOver,
         backgroundAudio,
         output: {
-          width: 1080,
-          height: 1920,
+          width,
+          height,
           fps: 30,
           duration: totalDuration
         }
@@ -204,10 +222,9 @@ export default function SceneEditor({ template, onBack }) {
             className="bg-transparent text-lg font-semibold tracking-tight focus:outline-none focus:ring-1 focus:ring-blue-500 px-2 py-1 rounded"
             placeholder="Project Name"
           />
-          <span className="text-xs text-gray-500">ffmpeg optimized</span>
         </div>
 
-        {/* Center - View Mode & Voice-Over Toggle */}
+        {/* Center - View Mode, Aspect Ratio & Voice-Over Toggle */}
         <div className="flex items-center gap-3">
           {/* View Mode Toggle */}
           <div className="flex bg-gray-800 rounded overflow-hidden">
@@ -228,6 +245,13 @@ export default function SceneEditor({ template, onBack }) {
               JSON
             </button>
           </div>
+
+          {/* Aspect Ratio Toggle */}
+          <button
+            onClick={toggleAspectRatio}
+            className="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 rounded text-xs flex items-center gap-1.5 transition-colors">
+            {aspectRatio === '9:16' ? '📱' : '🖥️'} {aspectRatio}
+          </button>
 
           {/* Voice-Over Mode Toggle */}
           <button
