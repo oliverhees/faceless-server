@@ -1,11 +1,11 @@
 import { useState, useRef } from 'react'
-import { Plus, Trash2, Music, Type, Play, Download, Mic, Speaker, ArrowLeft, Save, X, Code, Eye } from 'lucide-react'
+import { Plus, Trash2, Music, Type, Play, Download, Mic, Speaker, ArrowLeft, Save, X, Code, Eye, Image, Link } from 'lucide-react'
 import { templateAPI } from '../services/api'
 
 export default function SceneEditor({ template, onBack }) {
   const [projectName, setProjectName] = useState(template?.template_name || 'New Video')
   const [scenes, setScenes] = useState(template?.scenes || [
-    { id: 1, prompt: '', duration: 8, voiceOver: '', captions: '', transition: 'fade' }
+    { id: 1, prompt: '', duration: 8, voiceOver: '', captions: '', transition: 'fade', referenceImage: '', useLastFrameAsReference: false }
   ])
   const [selectedScene, setSelectedScene] = useState(1)
   const [voiceOverMode, setVoiceOverMode] = useState(template?.voiceOverMode || 'global') // 'global' or 'scene'
@@ -36,7 +36,16 @@ export default function SceneEditor({ template, onBack }) {
 
   const addScene = () => {
     const newId = Math.max(...scenes.map(s => s.id), 0) + 1
-    setScenes([...scenes, { id: newId, prompt: '', duration: 8, voiceOver: '', captions: '', transition: 'fade' }])
+    setScenes([...scenes, {
+      id: newId,
+      prompt: '',
+      duration: 8,
+      voiceOver: '',
+      captions: '',
+      transition: 'fade',
+      referenceImage: '',
+      useLastFrameAsReference: false
+    }])
   }
 
   const toggleVoiceOverMode = () => {
@@ -66,7 +75,9 @@ export default function SceneEditor({ template, onBack }) {
         duration: scene.duration,
         voiceOver: voiceOverMode === 'scene' ? (scene.voiceOver || null) : null,
         captions: scene.captions || null,
-        transition: index < scenes.length - 1 ? scene.transition : null
+        transition: index < scenes.length - 1 ? scene.transition : null,
+        referenceImage: scene.referenceImage || null,
+        useLastFrameAsReference: index > 0 ? (scene.useLastFrameAsReference || false) : false
       })),
       globalAudio: {
         voiceOver: voiceOverMode === 'global' ? (globalVoiceOver || null) : null,
@@ -142,7 +153,9 @@ export default function SceneEditor({ template, onBack }) {
         duration: scene.duration,
         voiceOver: voiceOverMode === 'scene' ? (scene.voiceOver || null) : null,
         captions: scene.captions || null,
-        transition: index < scenes.length - 1 ? scene.transition : null
+        transition: index < scenes.length - 1 ? scene.transition : null,
+        referenceImage: scene.referenceImage || null,
+        useLastFrameAsReference: index > 0 ? (scene.useLastFrameAsReference || false) : false
       })),
       globalAudio: {
         voiceOver: voiceOverMode === 'global' ? (globalVoiceOver || null) : null,
@@ -350,10 +363,31 @@ export default function SceneEditor({ template, onBack }) {
                 <div className="w-full h-full bg-gray-900 rounded-lg overflow-hidden border border-gray-800">
                   {/* Video Preview */}
                   <div className="h-2/3 bg-gradient-to-br from-purple-950 via-blue-950 to-pink-950 flex items-center justify-center relative">
-                    <div className="text-center">
+                    {/* Reference Image Background if set */}
+                    {scene.referenceImage && (
+                      <div className="absolute inset-0 opacity-20">
+                        <img src={scene.referenceImage} alt="" className="w-full h-full object-cover" />
+                      </div>
+                    )}
+
+                    <div className="text-center relative z-10">
                       <Play size={32} className="mx-auto mb-2 opacity-40" />
                       <div className="text-xs opacity-60">Scene {index + 1}</div>
                       <div className="text-xs mt-1 opacity-40">{scene.duration}s</div>
+                    </div>
+
+                    {/* Indicators */}
+                    <div className="absolute top-2 left-2 flex gap-1">
+                      {scene.referenceImage && (
+                        <div className="bg-blue-600 bg-opacity-90 p-1 rounded" title="Has reference image">
+                          <Image size={10} />
+                        </div>
+                      )}
+                      {scene.useLastFrameAsReference && index > 0 && (
+                        <div className="bg-green-600 bg-opacity-90 p-1 rounded" title="Uses last frame from previous scene">
+                          <Link size={10} />
+                        </div>
+                      )}
                     </div>
 
                     {selectedScene === scene.id && scenes.length > 1 && (
@@ -362,12 +396,12 @@ export default function SceneEditor({ template, onBack }) {
                           e.stopPropagation()
                           removeScene(scene.id)
                         }}
-                        className="absolute top-2 right-2 p-1.5 bg-red-600 hover:bg-red-700 rounded transition-colors">
+                        className="absolute top-2 right-2 p-1.5 bg-red-600 hover:bg-red-700 rounded transition-colors z-10">
                         <X size={12} />
                       </button>
                     )}
 
-                    <div className="absolute bottom-2 left-2 right-2">
+                    <div className="absolute bottom-2 left-2 right-2 z-10">
                       <input
                         type="number"
                         value={scene.duration}
@@ -560,37 +594,75 @@ export default function SceneEditor({ template, onBack }) {
         <div className="px-4 pb-4 space-y-2">
           {/* Scene Specific Controls */}
           {selectedSceneData && (
-            <div className="grid grid-cols-2 gap-2">
-              {voiceOverMode === 'scene' && (
+            <>
+              {/* Reference Image & Last Frame Toggle */}
+              <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2 text-xs text-gray-400">
-                    <Mic size={12} />
-                    <span>Scene {scenes.findIndex(s => s.id === selectedScene) + 1} Voice-Over</span>
+                    <Image size={12} />
+                    <span>Scene {scenes.findIndex(s => s.id === selectedScene) + 1} Reference Image</span>
                   </div>
                   <input
                     type="text"
-                    value={selectedSceneData.voiceOver || ''}
-                    onChange={(e) => updateScene(selectedScene, 'voiceOver', e.target.value)}
-                    placeholder="Voice-over Prompt or URL..."
-                    className="w-full bg-gray-950 px-2 py-1.5 rounded text-xs focus:outline-none focus:ring-1 focus:ring-purple-500"
+                    value={selectedSceneData.referenceImage || ''}
+                    onChange={(e) => updateScene(selectedScene, 'referenceImage', e.target.value)}
+                    placeholder="Image URL for AI generation..."
+                    className="w-full bg-gray-950 px-2 py-1.5 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
                 </div>
-              )}
 
-              <div className="space-y-1">
-                <div className="flex items-center gap-2 text-xs text-gray-400">
-                  <Type size={12} />
-                  <span>Scene {scenes.findIndex(s => s.id === selectedScene) + 1} Captions</span>
-                </div>
-                <input
-                  type="text"
-                  value={selectedSceneData.captions}
-                  onChange={(e) => updateScene(selectedScene, 'captions', e.target.value)}
-                  placeholder="Caption Text..."
-                  className="w-full bg-gray-950 px-2 py-1.5 rounded text-xs focus:outline-none focus:ring-1 focus:ring-yellow-500"
-                />
+                {scenes.findIndex(s => s.id === selectedScene) > 0 && (
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 text-xs text-gray-400">
+                      <Link size={12} />
+                      <span>Use Last Frame as Reference</span>
+                    </div>
+                    <label className="flex items-center gap-2 px-3 py-2 bg-gray-950 rounded cursor-pointer hover:bg-gray-900 transition-colors">
+                      <input
+                        type="checkbox"
+                        checked={selectedSceneData.useLastFrameAsReference || false}
+                        onChange={(e) => updateScene(selectedScene, 'useLastFrameAsReference', e.target.checked)}
+                        className="w-4 h-4 text-blue-600 bg-gray-800 border-gray-700 rounded focus:ring-blue-500"
+                      />
+                      <span className="text-xs text-gray-300">Use previous scene's last frame</span>
+                    </label>
+                  </div>
+                )}
               </div>
-            </div>
+
+              {/* Voice-Over & Captions */}
+              <div className="grid grid-cols-2 gap-2">
+                {voiceOverMode === 'scene' && (
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 text-xs text-gray-400">
+                      <Mic size={12} />
+                      <span>Scene {scenes.findIndex(s => s.id === selectedScene) + 1} Voice-Over</span>
+                    </div>
+                    <input
+                      type="text"
+                      value={selectedSceneData.voiceOver || ''}
+                      onChange={(e) => updateScene(selectedScene, 'voiceOver', e.target.value)}
+                      placeholder="Voice-over Prompt or URL..."
+                      className="w-full bg-gray-950 px-2 py-1.5 rounded text-xs focus:outline-none focus:ring-1 focus:ring-purple-500"
+                    />
+                  </div>
+                )}
+
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-xs text-gray-400">
+                    <Type size={12} />
+                    <span>Scene {scenes.findIndex(s => s.id === selectedScene) + 1} Captions</span>
+                  </div>
+                  <input
+                    type="text"
+                    value={selectedSceneData.captions}
+                    onChange={(e) => updateScene(selectedScene, 'captions', e.target.value)}
+                    placeholder="Caption Text..."
+                    className="w-full bg-gray-950 px-2 py-1.5 rounded text-xs focus:outline-none focus:ring-1 focus:ring-yellow-500"
+                  />
+                </div>
+              </div>
+            </>
           )}
 
           {/* Global Audio Controls */}
