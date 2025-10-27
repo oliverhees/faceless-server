@@ -328,13 +328,15 @@ export default function SceneEditor({ template, onBack }) {
         ref={scenesScrollRef}
         onScroll={handleScenesScroll}
         className="flex-1 overflow-x-auto overflow-y-hidden relative"
-        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-        <style>{`
-          div::-webkit-scrollbar { display: none; }
-        `}</style>
+        style={{ scrollbarWidth: 'thin', scrollbarColor: '#374151 #111827' }}>
 
         <div className="h-full flex items-center px-6 gap-3" style={{ minWidth: 'max-content' }}>
-          {scenes.map((scene, index) => (
+          {scenes.map((scene, index) => {
+            const cardDimensions = aspectRatio === '16:9'
+              ? { width: '400px', height: '225px' }
+              : { width: '200px', height: '356px' }
+
+            return (
             <div key={scene.id} className="flex items-center gap-3">
               {/* Scene Card */}
               <div
@@ -344,7 +346,7 @@ export default function SceneEditor({ template, onBack }) {
                     ? 'ring-2 ring-blue-500'
                     : 'hover:ring-1 ring-gray-700'
                 }`}
-                style={{ width: '200px', height: '400px' }}>
+                style={cardDimensions}>
                 <div className="w-full h-full bg-gray-900 rounded-lg overflow-hidden border border-gray-800">
                   {/* Video Preview */}
                   <div className="h-2/3 bg-gradient-to-br from-purple-950 via-blue-950 to-pink-950 flex items-center justify-center relative">
@@ -408,7 +410,8 @@ export default function SceneEditor({ template, onBack }) {
                 </div>
               )}
             </div>
-          ))}
+            )
+          })}
         </div>
       </div>
 
@@ -504,27 +507,8 @@ export default function SceneEditor({ template, onBack }) {
                 </div>
               )}
 
-              {/* Background Audio Layer */}
-              {backgroundAudio && (
-                <div className="mb-1">
-                  <div className="text-xs text-gray-500 mb-1 flex items-center gap-1">
-                    <Speaker size={10} />
-                    Background
-                  </div>
-                  <div className="h-8 bg-gray-950 rounded relative overflow-hidden">
-                    <div
-                      className="absolute h-full bg-orange-700"
-                      style={{ left: 0, width: `${totalDuration * 20}px` }}>
-                      <div className="h-full flex items-center justify-center text-xs">
-                        <Speaker size={10} />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
               {/* Captions Layer */}
-              <div>
+              <div className="mb-1">
                 <div className="text-xs text-gray-500 mb-1 flex items-center gap-1">
                   <Type size={10} />
                   Captions
@@ -549,6 +533,25 @@ export default function SceneEditor({ template, onBack }) {
                   })}
                 </div>
               </div>
+
+              {/* Background Audio Layer */}
+              {backgroundAudio && (
+                <div className="mb-1">
+                  <div className="text-xs text-gray-500 mb-1 flex items-center gap-1">
+                    <Speaker size={10} />
+                    Background
+                  </div>
+                  <div className="h-8 bg-gray-950 rounded relative overflow-hidden">
+                    <div
+                      className="absolute h-full bg-orange-700"
+                      style={{ left: 0, width: `${totalDuration * 20}px` }}>
+                      <div className="h-full flex items-center justify-center text-xs">
+                        <Speaker size={10} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
