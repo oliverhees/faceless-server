@@ -12,7 +12,7 @@ export default function SceneEditor({ template, onBack }) {
   const [globalVoiceOver, setGlobalVoiceOver] = useState(template?.globalVoiceOver || '')
   const [backgroundAudio, setBackgroundAudio] = useState(template?.backgroundAudio || '')
   const [aspectRatio, setAspectRatio] = useState(template?.aspectRatio || '9:16') // '9:16' or '16:9'
-  const [viewMode, setViewMode] = useState('visual') // 'visual' or 'json'
+  const [viewMode, setViewMode] = useState('timeline') // 'timeline', 'sceneDetail', or 'json'
   const [jsonCode, setJsonCode] = useState('')
   const [jsonError, setJsonError] = useState(null)
   const [saving, setSaving] = useState(false)
@@ -54,6 +54,15 @@ export default function SceneEditor({ template, onBack }) {
 
   const toggleAspectRatio = () => {
     setAspectRatio(prev => prev === '9:16' ? '16:9' : '9:16')
+  }
+
+  const openSceneDetail = (sceneId) => {
+    setSelectedScene(sceneId)
+    setViewMode('sceneDetail')
+  }
+
+  const backToTimeline = () => {
+    setViewMode('timeline')
   }
 
   const getOutputDimensions = () => {
@@ -103,7 +112,7 @@ export default function SceneEditor({ template, onBack }) {
       setBackgroundAudio(config.globalAudio?.background || '')
       setScenes(config.scenes || [])
       setJsonError(null)
-      setViewMode('visual')
+      setViewMode('timeline')
     } catch (err) {
       setJsonError('Invalid JSON: ' + err.message)
     }
@@ -242,12 +251,12 @@ export default function SceneEditor({ template, onBack }) {
           {/* View Mode Toggle */}
           <div className="flex bg-gray-800 rounded overflow-hidden">
             <button
-              onClick={() => setViewMode('visual')}
+              onClick={() => setViewMode('timeline')}
               className={`px-3 py-1.5 text-xs flex items-center gap-1.5 transition-colors ${
-                viewMode === 'visual' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'
+                viewMode === 'timeline' || viewMode === 'sceneDetail' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'
               }`}>
               <Eye size={12} />
-              Visual
+              Timeline
             </button>
             <button
               onClick={() => { syncToJson(); setViewMode('json'); }}
@@ -324,7 +333,7 @@ export default function SceneEditor({ template, onBack }) {
                 onClick={syncFromJson}
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded text-sm flex items-center gap-2 transition-colors">
                 <Eye size={14} />
-                Apply & Switch to Visual
+                Apply & Switch to Timeline
               </button>
               <button
                 onClick={syncToJson}
@@ -334,9 +343,199 @@ export default function SceneEditor({ template, onBack }) {
             </div>
           </div>
         </div>
+      ) : viewMode === 'sceneDetail' ? (
+        /* Scene Detail View */
+        <div className="flex-1 flex overflow-hidden">
+          {/* Left Panel - Controls */}
+          <div className="w-1/2 p-6 overflow-y-auto border-r border-gray-800">
+            <div className="space-y-6">
+              {/* Back Button */}
+              <button
+                onClick={backToTimeline}
+                className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors text-sm">
+                <ArrowLeft size={16} />
+                Back to Timeline
+              </button>
+
+              {/* Scene Title */}
+              <div>
+                <h2 className="text-2xl font-bold">Scene {scenes.findIndex(s => s.id === selectedScene) + 1}</h2>
+                <p className="text-sm text-gray-400 mt-1">Configure your scene settings</p>
+              </div>
+
+              {selectedSceneData && (
+                <>
+                  {/* Prompt */}
+                  <div className="space-y-2">
+                    <label className="flex items-center gap-2 text-sm font-medium text-gray-300">
+                      <Type size={16} />
+                      Video Prompt
+                    </label>
+                    <textarea
+                      value={selectedSceneData.prompt}
+                      onChange={(e) => updateScene(selectedScene, 'prompt', e.target.value)}
+                      className="w-full bg-gray-900 text-gray-100 text-sm p-3 rounded border border-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                      placeholder="Describe what should happen in this scene..."
+                      rows={4}
+                    />
+                  </div>
+
+                  {/* Duration */}
+                  <div className="space-y-2">
+                    <label className="flex items-center gap-2 text-sm font-medium text-gray-300">
+                      <Play size={16} />
+                      Duration (seconds)
+                    </label>
+                    <input
+                      type="number"
+                      value={selectedSceneData.duration}
+                      onChange={(e) => updateScene(selectedScene, 'duration', parseInt(e.target.value) || 8)}
+                      className="w-full bg-gray-900 px-3 py-2 rounded text-sm border border-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      min="5"
+                      max="15"
+                    />
+                  </div>
+
+                  {/* Reference Image */}
+                  <div className="space-y-2">
+                    <label className="flex items-center gap-2 text-sm font-medium text-gray-300">
+                      <Image size={16} />
+                      Reference Image
+                    </label>
+                    <input
+                      type="text"
+                      value={selectedSceneData.referenceImage || ''}
+                      onChange={(e) => updateScene(selectedScene, 'referenceImage', e.target.value)}
+                      placeholder="Image URL for AI generation..."
+                      className="w-full bg-gray-900 px-3 py-2 rounded text-sm border border-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  {/* Use Last Frame Toggle */}
+                  {scenes.findIndex(s => s.id === selectedScene) > 0 && (
+                    <div className="space-y-2">
+                      <label className="flex items-center gap-2 text-sm font-medium text-gray-300">
+                        <Link size={16} />
+                        Frame Continuity
+                      </label>
+                      <label className="flex items-center gap-3 px-4 py-3 bg-gray-900 rounded cursor-pointer hover:bg-gray-800 transition-colors border border-gray-800">
+                        <input
+                          type="checkbox"
+                          checked={selectedSceneData.useLastFrameAsReference || false}
+                          onChange={(e) => updateScene(selectedScene, 'useLastFrameAsReference', e.target.checked)}
+                          className="w-5 h-5 text-blue-600 bg-gray-800 border-gray-700 rounded focus:ring-blue-500"
+                        />
+                        <div>
+                          <div className="text-sm text-gray-300">Use previous scene's last frame</div>
+                          <div className="text-xs text-gray-500">Creates seamless transitions between scenes</div>
+                        </div>
+                      </label>
+                    </div>
+                  )}
+
+                  {/* Voice-Over (if scene mode) */}
+                  {voiceOverMode === 'scene' && (
+                    <div className="space-y-2">
+                      <label className="flex items-center gap-2 text-sm font-medium text-gray-300">
+                        <Mic size={16} />
+                        Voice-Over
+                      </label>
+                      <input
+                        type="text"
+                        value={selectedSceneData.voiceOver || ''}
+                        onChange={(e) => updateScene(selectedScene, 'voiceOver', e.target.value)}
+                        placeholder="Voice-over prompt or URL..."
+                        className="w-full bg-gray-900 px-3 py-2 rounded text-sm border border-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      />
+                    </div>
+                  )}
+
+                  {/* Captions */}
+                  <div className="space-y-2">
+                    <label className="flex items-center gap-2 text-sm font-medium text-gray-300">
+                      <Type size={16} />
+                      Captions
+                    </label>
+                    <input
+                      type="text"
+                      value={selectedSceneData.captions}
+                      onChange={(e) => updateScene(selectedScene, 'captions', e.target.value)}
+                      placeholder="Caption text..."
+                      className="w-full bg-gray-900 px-3 py-2 rounded text-sm border border-gray-800 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                    />
+                  </div>
+
+                  {/* Transition (if not last scene) */}
+                  {scenes.findIndex(s => s.id === selectedScene) < scenes.length - 1 && (
+                    <div className="space-y-2">
+                      <label className="flex items-center gap-2 text-sm font-medium text-gray-300">
+                        Transition to Next Scene
+                      </label>
+                      <select
+                        value={selectedSceneData.transition}
+                        onChange={(e) => updateTransition(selectedScene, e.target.value)}
+                        className="w-full bg-gray-900 border border-gray-800 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
+                        {transitionTypes.map(t => (
+                          <option key={t.value} value={t.value}>{t.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Right Panel - Preview */}
+          <div className="w-1/2 p-6 flex items-center justify-center bg-gray-900">
+            {selectedSceneData && (
+              <div className="relative" style={aspectRatio === '16:9' ? { width: '640px', height: '360px' } : { width: '360px', height: '640px' }}>
+                <div className="w-full h-full bg-gradient-to-br from-purple-950 via-blue-950 to-pink-950 rounded-lg overflow-hidden border-2 border-gray-800 flex items-center justify-center relative">
+                  {/* Reference Image Background */}
+                  {selectedSceneData.referenceImage && (
+                    <div className="absolute inset-0 opacity-30">
+                      <img src={selectedSceneData.referenceImage} alt="" className="w-full h-full object-cover" />
+                    </div>
+                  )}
+
+                  {/* Scene Info Overlay */}
+                  <div className="text-center relative z-10">
+                    <Play size={64} className="mx-auto mb-4 opacity-40" />
+                    <div className="text-lg opacity-60">Scene {scenes.findIndex(s => s.id === selectedScene) + 1}</div>
+                    <div className="text-sm mt-2 opacity-40">{selectedSceneData.duration}s</div>
+                  </div>
+
+                  {/* Indicators */}
+                  <div className="absolute top-4 left-4 flex gap-2">
+                    {selectedSceneData.referenceImage && (
+                      <div className="bg-blue-600 bg-opacity-90 px-3 py-1.5 rounded flex items-center gap-1.5">
+                        <Image size={14} />
+                        <span className="text-xs">Reference Image</span>
+                      </div>
+                    )}
+                    {selectedSceneData.useLastFrameAsReference && scenes.findIndex(s => s.id === selectedScene) > 0 && (
+                      <div className="bg-green-600 bg-opacity-90 px-3 py-1.5 rounded flex items-center gap-1.5">
+                        <Link size={14} />
+                        <span className="text-xs">Last Frame</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Prompt Preview Below */}
+                {selectedSceneData.prompt && (
+                  <div className="mt-4 p-4 bg-gray-950 rounded border border-gray-800">
+                    <div className="text-xs text-gray-500 mb-1">Prompt:</div>
+                    <div className="text-sm text-gray-300">{selectedSceneData.prompt}</div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
       ) : (
         <>
-      {/* Main Scene Area */}
+      {/* Main Scene Area - Timeline View */}
       <div
         ref={scenesScrollRef}
         onScroll={handleScenesScroll}
@@ -353,7 +552,7 @@ export default function SceneEditor({ template, onBack }) {
             <div key={scene.id} className="flex items-center gap-3">
               {/* Scene Card */}
               <div
-                onClick={() => setSelectedScene(scene.id)}
+                onClick={() => openSceneDetail(scene.id)}
                 className={`relative flex-shrink-0 cursor-pointer transition-all ${
                   selectedScene === scene.id
                     ? 'ring-2 ring-blue-500'
