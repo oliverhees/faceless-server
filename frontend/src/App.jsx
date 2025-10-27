@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import TemplateBuilder from './components/TemplateBuilder'
+import VisualEditor from './components/VisualEditor'
 import TemplateList from './components/TemplateList'
 import './App.css'
 
@@ -35,7 +35,7 @@ function App() {
           onEditTemplate={handleEditTemplate}
         />
       ) : (
-        <TemplateBuilder
+        <VisualEditor
           template={editingTemplate}
           onBack={handleBackToList}
         />

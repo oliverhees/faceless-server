@@ -1,0 +1,143 @@
+.editor-timeline {
+  background: white;
+  border-top: 1px solid #e0e0e0;
+  display: flex;
+  flex-direction: column;
+  max-height: 200px;
+}
+
+.timeline-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.timeline-header h3 {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.add-scene-btn {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+}
+
+.timeline-scenes {
+  display: flex;
+  gap: 0.75rem;
+  padding: 1rem;
+  overflow-x: auto;
+  flex: 1;
+}
+
+.timeline-scene {
+  min-width: 180px;
+  background: #f8f8f8;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  padding: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.timeline-scene:hover {
+  border-color: #ddd;
+}
+
+.timeline-scene.active {
+  background: #e8eeff;
+  border-color: #667eea;
+}
+
+.scene-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.scene-number {
+  background: #667eea;
+  color: white;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.scene-name-input {
+  flex: 1;
+  background: transparent;
+  border: 1px dashed transparent;
+  padding: 0.25rem;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.scene-name-input:hover {
+  border-color: #ddd;
+}
+
+.scene-name-input:focus {
+  border-color: #667eea;
+  border-style: solid;
+}
+
+.scene-info {
+  display: flex;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  color: #999;
+  margin-bottom: 0.5rem;
+}
+
+.scene-duration-input label {
+  font-size: 0.75rem;
+  color: #666;
+}
+
+.scene-duration-input input {
+  width: 100%;
+  padding: 0.25rem;
+  margin-top: 0.25rem;
+  font-size: 0.875rem;
+}
+
+.delete-scene-btn {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  padding: 0.25rem;
+  background: white;
+  border: 1px solid #ddd;
+  min-width: auto;
+  color: #dc3545;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.timeline-scene:hover .delete-scene-btn {
+  opacity: 1;
+}
+
+.delete-scene-btn:hover {
+  background: #dc3545;
+  color: white;
+  transform: none;
+}
+
+.timeline-summary {
+  padding: 0.5rem 1rem;
+  border-top: 1px solid #e0e0e0;
+  font-size: 0.875rem;
+  color: #666;
+  background: #f8f8f8;
+}

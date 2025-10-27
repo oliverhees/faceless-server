@@ -14,9 +14,12 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "axios": "^1.12.2",
+    "fabric": "^6.7.1",
     "lucide-react": "^0.548.0",
     "react": "^19.1.1",
-    "react-dom": "^19.1.1"
+    "react-color": "^2.19.3",
+    "react-dom": "^19.1.1",
+    "uuid": "^13.0.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.36.0",
