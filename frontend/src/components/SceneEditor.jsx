@@ -1,15 +1,19 @@
 import { useState, useRef } from 'react'
-import { Plus, Trash2, Music, Type, Play, Download, Mic, Speaker, ArrowLeft, Save, X } from 'lucide-react'
+import { Plus, Trash2, Music, Type, Play, Download, Mic, Speaker, ArrowLeft, Save, X, Code, Eye } from 'lucide-react'
 import { templateAPI } from '../services/api'
 
 export default function SceneEditor({ template, onBack }) {
   const [projectName, setProjectName] = useState(template?.template_name || 'New Video')
   const [scenes, setScenes] = useState(template?.scenes || [
-    { id: 1, prompt: '', duration: 8, audio: '', captions: '', transition: 'fade' }
+    { id: 1, prompt: '', duration: 8, voiceOver: '', captions: '', transition: 'fade' }
   ])
   const [selectedScene, setSelectedScene] = useState(1)
-  const [voiceOver, setVoiceOver] = useState(template?.voiceOver || '')
+  const [voiceOverMode, setVoiceOverMode] = useState(template?.voiceOverMode || 'global') // 'global' or 'scene'
+  const [globalVoiceOver, setGlobalVoiceOver] = useState(template?.globalVoiceOver || '')
   const [backgroundAudio, setBackgroundAudio] = useState(template?.backgroundAudio || '')
+  const [viewMode, setViewMode] = useState('visual') // 'visual' or 'json'
+  const [jsonCode, setJsonCode] = useState('')
+  const [jsonError, setJsonError] = useState(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
 
@@ -31,7 +35,53 @@ export default function SceneEditor({ template, onBack }) {
 
   const addScene = () => {
     const newId = Math.max(...scenes.map(s => s.id), 0) + 1
-    setScenes([...scenes, { id: newId, prompt: '', duration: 8, audio: '', captions: '', transition: 'fade' }])
+    setScenes([...scenes, { id: newId, prompt: '', duration: 8, voiceOver: '', captions: '', transition: 'fade' }])
+  }
+
+  const toggleVoiceOverMode = () => {
+    setVoiceOverMode(prev => prev === 'global' ? 'scene' : 'global')
+  }
+
+  const syncToJson = () => {
+    const config = {
+      template_name: projectName,
+      voiceOverMode,
+      scenes: scenes.map((scene, index) => ({
+        id: scene.id,
+        order: index,
+        prompt: scene.prompt,
+        duration: scene.duration,
+        voiceOver: voiceOverMode === 'scene' ? (scene.voiceOver || null) : null,
+        captions: scene.captions || null,
+        transition: index < scenes.length - 1 ? scene.transition : null
+      })),
+      globalAudio: {
+        voiceOver: voiceOverMode === 'global' ? (globalVoiceOver || null) : null,
+        background: backgroundAudio || null
+      },
+      totalDuration,
+      output: {
+        width: 1080,
+        height: 1920,
+        fps: 30
+      }
+    }
+    setJsonCode(JSON.stringify(config, null, 2))
+  }
+
+  const syncFromJson = () => {
+    try {
+      const config = JSON.parse(jsonCode)
+      setProjectName(config.template_name || 'New Video')
+      setVoiceOverMode(config.voiceOverMode || 'global')
+      setGlobalVoiceOver(config.globalAudio?.voiceOver || '')
+      setBackgroundAudio(config.globalAudio?.background || '')
+      setScenes(config.scenes || [])
+      setJsonError(null)
+      setViewMode('visual')
+    } catch (err) {
+      setJsonError('Invalid JSON: ' + err.message)
+    }
   }
 
   const removeScene = (id) => {
@@ -68,17 +118,18 @@ export default function SceneEditor({ template, onBack }) {
   const exportJSON = () => {
     const config = {
       template_name: projectName,
+      voiceOverMode,
       scenes: scenes.map((scene, index) => ({
         id: scene.id,
         order: index,
         prompt: scene.prompt,
         duration: scene.duration,
-        audio: scene.audio || null,
+        voiceOver: voiceOverMode === 'scene' ? (scene.voiceOver || null) : null,
         captions: scene.captions || null,
         transition: index < scenes.length - 1 ? scene.transition : null
       })),
       globalAudio: {
-        voiceOver: voiceOver || null,
+        voiceOver: voiceOverMode === 'global' ? (globalVoiceOver || null) : null,
         background: backgroundAudio || null
       },
       totalDuration,
@@ -110,8 +161,9 @@ export default function SceneEditor({ template, onBack }) {
         template_name: projectName,
         description: `Scene-based video with ${scenes.length} scenes`,
         category: 'ai-video',
+        voiceOverMode,
         scenes,
-        voiceOver,
+        globalVoiceOver,
         backgroundAudio,
         output: {
           width: 1080,
@@ -154,6 +206,38 @@ export default function SceneEditor({ template, onBack }) {
           />
           <span className="text-xs text-gray-500">ffmpeg optimized</span>
         </div>
+
+        {/* Center - View Mode & Voice-Over Toggle */}
+        <div className="flex items-center gap-3">
+          {/* View Mode Toggle */}
+          <div className="flex bg-gray-800 rounded overflow-hidden">
+            <button
+              onClick={() => setViewMode('visual')}
+              className={`px-3 py-1.5 text-xs flex items-center gap-1.5 transition-colors ${
+                viewMode === 'visual' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'
+              }`}>
+              <Eye size={12} />
+              Visual
+            </button>
+            <button
+              onClick={() => { syncToJson(); setViewMode('json'); }}
+              className={`px-3 py-1.5 text-xs flex items-center gap-1.5 transition-colors ${
+                viewMode === 'json' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'
+              }`}>
+              <Code size={12} />
+              JSON
+            </button>
+          </div>
+
+          {/* Voice-Over Mode Toggle */}
+          <button
+            onClick={toggleVoiceOverMode}
+            className="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 rounded text-xs flex items-center gap-1.5 transition-colors">
+            <Mic size={12} />
+            Voice-Over: {voiceOverMode === 'global' ? 'Global' : 'Per Scene'}
+          </button>
+        </div>
+
         <div className="flex gap-2">
           <button
             onClick={addScene}
@@ -183,6 +267,38 @@ export default function SceneEditor({ template, onBack }) {
         </div>
       )}
 
+      {viewMode === 'json' ? (
+        /* JSON Editor View */
+        <div className="flex-1 flex flex-col p-6 overflow-hidden">
+          {jsonError && (
+            <div className="bg-red-900/50 border border-red-800 text-red-200 px-4 py-2 rounded text-sm mb-4">
+              {jsonError}
+            </div>
+          )}
+          <div className="flex-1 flex flex-col">
+            <textarea
+              value={jsonCode}
+              onChange={(e) => setJsonCode(e.target.value)}
+              className="flex-1 bg-gray-900 text-gray-100 font-mono text-sm p-4 rounded border border-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              placeholder="JSON configuration..."
+            />
+            <div className="mt-4 flex gap-2">
+              <button
+                onClick={syncFromJson}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded text-sm flex items-center gap-2 transition-colors">
+                <Eye size={14} />
+                Apply & Switch to Visual
+              </button>
+              <button
+                onClick={syncToJson}
+                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm transition-colors">
+                Refresh from Visual
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <>
       {/* Main Scene Area */}
       <div
         ref={scenesScrollRef}
@@ -316,39 +432,41 @@ export default function SceneEditor({ template, onBack }) {
                 </div>
               </div>
 
-              {/* Audio Layer */}
-              <div className="mb-1">
-                <div className="text-xs text-gray-500 mb-1 flex items-center gap-1">
-                  <Music size={10} />
-                  Scene Audio
-                </div>
-                <div className="h-8 bg-gray-950 rounded relative overflow-hidden">
-                  {scenes.map((scene, index) => {
-                    if (!scene.audio) return null
-                    const prevDuration = scenes.slice(0, index).reduce((sum, s) => sum + s.duration, 0)
-                    const widthPx = scene.duration * 20
-                    const leftPx = prevDuration * 20
-
-                    return (
-                      <div
-                        key={scene.id}
-                        className="absolute h-full bg-green-700 border-r border-gray-950"
-                        style={{ left: `${leftPx}px`, width: `${widthPx}px` }}>
-                        <div className="h-full flex items-center justify-center text-xs">
-                          <Music size={10} />
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-
-              {/* Voice-over Layer */}
-              {voiceOver && (
+              {/* Scene Voice-Over Layer (only when mode is 'scene') */}
+              {voiceOverMode === 'scene' && (
                 <div className="mb-1">
                   <div className="text-xs text-gray-500 mb-1 flex items-center gap-1">
                     <Mic size={10} />
-                    Voice-over
+                    Scene Voice-Over
+                  </div>
+                  <div className="h-8 bg-gray-950 rounded relative overflow-hidden">
+                    {scenes.map((scene, index) => {
+                      if (!scene.voiceOver) return null
+                      const prevDuration = scenes.slice(0, index).reduce((sum, s) => sum + s.duration, 0)
+                      const widthPx = scene.duration * 20
+                      const leftPx = prevDuration * 20
+
+                      return (
+                        <div
+                          key={scene.id}
+                          className="absolute h-full bg-purple-700 border-r border-gray-950"
+                          style={{ left: `${leftPx}px`, width: `${widthPx}px` }}>
+                          <div className="h-full flex items-center justify-center text-xs">
+                            <Mic size={10} />
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Global Voice-over Layer (only when mode is 'global') */}
+              {voiceOverMode === 'global' && globalVoiceOver && (
+                <div className="mb-1">
+                  <div className="text-xs text-gray-500 mb-1 flex items-center gap-1">
+                    <Mic size={10} />
+                    Voice-over (Global)
                   </div>
                   <div className="h-8 bg-gray-950 rounded relative overflow-hidden">
                     <div
@@ -416,19 +534,21 @@ export default function SceneEditor({ template, onBack }) {
           {/* Scene Specific Controls */}
           {selectedSceneData && (
             <div className="grid grid-cols-2 gap-2">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2 text-xs text-gray-400">
-                  <Music size={12} />
-                  <span>Scene {scenes.findIndex(s => s.id === selectedScene) + 1} Audio</span>
+              {voiceOverMode === 'scene' && (
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-xs text-gray-400">
+                    <Mic size={12} />
+                    <span>Scene {scenes.findIndex(s => s.id === selectedScene) + 1} Voice-Over</span>
+                  </div>
+                  <input
+                    type="text"
+                    value={selectedSceneData.voiceOver || ''}
+                    onChange={(e) => updateScene(selectedScene, 'voiceOver', e.target.value)}
+                    placeholder="Voice-over Prompt or URL..."
+                    className="w-full bg-gray-950 px-2 py-1.5 rounded text-xs focus:outline-none focus:ring-1 focus:ring-purple-500"
+                  />
                 </div>
-                <input
-                  type="text"
-                  value={selectedSceneData.audio}
-                  onChange={(e) => updateScene(selectedScene, 'audio', e.target.value)}
-                  placeholder="Audio Prompt or URL..."
-                  className="w-full bg-gray-950 px-2 py-1.5 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
-                />
-              </div>
+              )}
 
               <div className="space-y-1">
                 <div className="flex items-center gap-2 text-xs text-gray-400">
@@ -440,27 +560,29 @@ export default function SceneEditor({ template, onBack }) {
                   value={selectedSceneData.captions}
                   onChange={(e) => updateScene(selectedScene, 'captions', e.target.value)}
                   placeholder="Caption Text..."
-                  className="w-full bg-gray-950 px-2 py-1.5 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="w-full bg-gray-950 px-2 py-1.5 rounded text-xs focus:outline-none focus:ring-1 focus:ring-yellow-500"
                 />
               </div>
             </div>
           )}
 
           {/* Global Audio Controls */}
-          <div className="grid grid-cols-2 gap-2 pt-2 border-t border-gray-800">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2 text-xs text-gray-400">
-                <Mic size={12} />
-                <span>Voice-over (Global)</span>
+          <div className={`grid gap-2 pt-2 border-t border-gray-800 ${voiceOverMode === 'global' ? 'grid-cols-2' : 'grid-cols-1'}`}>
+            {voiceOverMode === 'global' && (
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 text-xs text-gray-400">
+                  <Mic size={12} />
+                  <span>Voice-over (Global)</span>
+                </div>
+                <input
+                  type="text"
+                  value={globalVoiceOver}
+                  onChange={(e) => setGlobalVoiceOver(e.target.value)}
+                  placeholder="Voice-over Prompt or URL..."
+                  className="w-full bg-gray-950 px-2 py-1.5 rounded text-xs focus:outline-none focus:ring-1 focus:ring-purple-500"
+                />
               </div>
-              <input
-                type="text"
-                value={voiceOver}
-                onChange={(e) => setVoiceOver(e.target.value)}
-                placeholder="Voice-over Prompt or URL..."
-                className="w-full bg-gray-950 px-2 py-1.5 rounded text-xs focus:outline-none focus:ring-1 focus:ring-purple-500"
-              />
-            </div>
+            )}
 
             <div className="space-y-1">
               <div className="flex items-center gap-2 text-xs text-gray-400">
@@ -478,6 +600,8 @@ export default function SceneEditor({ template, onBack }) {
           </div>
         </div>
       </div>
+        </>
+      )}
     </div>
   )
 }
