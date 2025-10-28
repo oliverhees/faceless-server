@@ -1,18 +1,19 @@
 import { useState, useRef } from 'react'
-import { Plus, Trash2, Music, Type, Play, Download, Mic, Speaker, ArrowLeft, Save, X, Code, Eye, Image, Link, Sparkles } from 'lucide-react'
+import { Plus, Trash2, Music, Type, Play, Download, Mic, Speaker, ArrowLeft, Save, X, Code, Eye, Image, Link, Sparkles, Settings, RefreshCw, Edit3 } from 'lucide-react'
 import { templateAPI } from '../services/api'
 
 export default function SceneEditor({ template, onBack }) {
+  // Check if we should start with generator or timeline
+  const hasTemplateData = template && template.scenes && template.scenes.length > 0
+
   const [projectName, setProjectName] = useState(template?.template_name || 'New Video')
-  const [scenes, setScenes] = useState(template?.scenes || [
-    { id: 1, prompt: '', duration: 8, voiceOver: '', captions: '', transition: 'fade', referenceImage: '', useLastFrameAsReference: false }
-  ])
-  const [selectedScene, setSelectedScene] = useState(1)
-  const [voiceOverMode, setVoiceOverMode] = useState(template?.voiceOverMode || 'global') // 'global' or 'scene'
+  const [scenes, setScenes] = useState(template?.scenes || [])
+  const [selectedScene, setSelectedScene] = useState(template?.scenes?.[0]?.id || 1)
+  const [voiceOverMode, setVoiceOverMode] = useState(template?.voiceOverMode || 'global')
   const [globalVoiceOver, setGlobalVoiceOver] = useState(template?.globalVoiceOver || '')
   const [backgroundAudio, setBackgroundAudio] = useState(template?.backgroundAudio || '')
-  const [aspectRatio, setAspectRatio] = useState(template?.aspectRatio || '9:16') // '9:16' or '16:9'
-  const [viewMode, setViewMode] = useState('timeline') // 'timeline', 'sceneDetail', 'generator', or 'json'
+  const [aspectRatio, setAspectRatio] = useState(template?.aspectRatio || '9:16')
+  const [viewMode, setViewMode] = useState(hasTemplateData ? 'timeline' : 'generator') // 'generator', 'review', 'timeline', 'sceneDetail', 'json'
   const [jsonCode, setJsonCode] = useState('')
   const [jsonError, setJsonError] = useState(null)
   const [saving, setSaving] = useState(false)
@@ -200,6 +201,7 @@ export default function SceneEditor({ template, onBack }) {
 
     setGenerating(false)
     setGeneratedResult(result)
+    setViewMode('review')
   }
 
   const loadGeneratedScenes = () => {
@@ -474,62 +476,79 @@ export default function SceneEditor({ template, onBack }) {
       )}
 
       {viewMode === 'generator' ? (
-        /* AI Generator View */
-        <div className="flex-1 flex flex-col p-8 overflow-hidden items-center justify-center bg-gradient-to-br from-gray-950 via-purple-950/20 to-gray-950">
-          <div className="w-full max-w-3xl space-y-6">
-            {/* Header */}
-            <div className="text-center space-y-2">
-              <div className="flex items-center justify-center gap-2 text-purple-400">
-                <Sparkles size={32} />
-              </div>
-              <h2 className="text-3xl font-bold">AI Video Generator</h2>
-              <p className="text-gray-400">Describe your video idea and let AI create the complete scene structure</p>
-            </div>
+        /* AI Generator Start Screen - Modern Full-Screen Design */
+        <div className="flex-1 flex items-center justify-center p-8 overflow-hidden relative bg-gradient-to-br from-indigo-950 via-purple-950 to-pink-950">
+          {/* Animated Background Elements */}
+          <div className="absolute inset-0 overflow-hidden">
+            <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
+            <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-indigo-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse" style={{ animationDelay: '1s' }}></div>
+            <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse" style={{ animationDelay: '2s' }}></div>
+          </div>
 
-            {!generatedResult ? (
-              /* Input Form */
-              <div className="space-y-6 bg-gray-900/50 p-8 rounded-lg border border-gray-800">
-                <div className="space-y-3">
-                  <label className="text-sm font-medium text-gray-300">What kind of video do you want to create?</label>
+          {/* Main Content Card */}
+          <div className="relative z-10 w-full max-w-4xl">
+            {/* Glassmorphism Card */}
+            <div className="bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 shadow-2xl overflow-hidden">
+              {/* Header */}
+              <div className="text-center pt-12 pb-8 px-8">
+                <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 mb-6 animate-pulse">
+                  <Sparkles size={40} className="text-white" />
+                </div>
+                <h1 className="text-5xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400 bg-clip-text text-transparent mb-4">
+                  AI Video Generator
+                </h1>
+                <p className="text-xl text-gray-300 max-w-2xl mx-auto">
+                  Describe your vision and watch AI transform it into a complete video project with scenes, voice-overs, and transitions
+                </p>
+              </div>
+
+              {/* Main Input Area */}
+              <div className="px-8 pb-8">
+                <div className="bg-black/20 backdrop-blur-sm rounded-2xl p-6 border border-white/5">
+                  <label className="block text-sm font-medium text-gray-300 mb-3">
+                    What video do you want to create?
+                  </label>
                   <textarea
                     value={generatorPrompt}
                     onChange={(e) => setGeneratorPrompt(e.target.value)}
                     placeholder="Examples:&#10;• 3 Ring doorbell camera videos showing a tornado with flying monkeys&#10;• A 1 minute story about a boy searching for dragons in the forest&#10;• Top 5 creepiest deep sea creatures with facts&#10;• 10 second product showcase for a smart watch"
-                    className="w-full h-40 bg-gray-950 text-gray-100 p-4 rounded border border-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+                    className="w-full h-48 bg-black/40 text-white text-lg p-5 rounded-xl border border-white/10 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none placeholder-gray-500 backdrop-blur-sm transition-all"
                     disabled={generating}
                   />
                 </div>
 
+                {/* Generate Button */}
                 <button
                   onClick={() => generateVideoWithAI(generatorPrompt)}
                   disabled={generating || !generatorPrompt.trim()}
-                  className="w-full px-6 py-4 bg-purple-600 hover:bg-purple-700 rounded-lg text-lg font-medium flex items-center justify-center gap-3 transition-colors disabled:bg-gray-700 disabled:cursor-not-allowed">
+                  className="w-full mt-6 px-8 py-5 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 rounded-xl text-xl font-semibold flex items-center justify-center gap-3 transition-all transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 shadow-lg shadow-purple-500/50">
                   {generating ? (
                     <>
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                      Generating with AI...
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+                      <span>Creating your video...</span>
                     </>
                   ) : (
                     <>
-                      <Sparkles size={20} />
-                      Generate Video Scenes
+                      <Sparkles size={24} />
+                      <span>Generate Video with AI</span>
                     </>
                   )}
                 </button>
 
                 {/* Example Prompts */}
-                <div className="pt-4 border-t border-gray-800">
-                  <p className="text-xs text-gray-500 mb-2">Try these examples:</p>
+                <div className="mt-6 pt-6 border-t border-white/10">
+                  <p className="text-sm text-gray-400 mb-3">Quick examples to get started:</p>
                   <div className="flex flex-wrap gap-2">
                     {[
                       '3 Ring videos with tornado and monkeys',
                       'Story: boy searching for dragons, 1 minute',
-                      'Top 5 deep sea creature facts'
+                      'Top 5 deep sea creature facts',
+                      'Product showcase for smartwatch'
                     ].map((example, i) => (
                       <button
                         key={i}
                         onClick={() => setGeneratorPrompt(example)}
-                        className="px-3 py-1 bg-gray-800 hover:bg-gray-700 rounded text-xs text-gray-300 transition-colors"
+                        className="px-4 py-2 bg-white/5 hover:bg-white/10 rounded-lg text-sm text-gray-300 transition-all border border-white/10 hover:border-purple-500/50"
                         disabled={generating}>
                         {example}
                       </button>
@@ -537,90 +556,144 @@ export default function SceneEditor({ template, onBack }) {
                   </div>
                 </div>
               </div>
-            ) : (
-              /* Generated Result Preview */
-              <div className="space-y-6 bg-gray-900/50 p-8 rounded-lg border border-purple-800/50">
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3 text-green-400">
-                    <div className="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center">
+            </div>
+
+            {/* Footer Info */}
+            <div className="text-center mt-6 text-sm text-gray-400">
+              <p>Powered by AI • Instant scene generation • Professional video structure</p>
+            </div>
+          </div>
+        </div>
+      ) : viewMode === 'review' ? (
+        /* Review & Edit Screen - NEW */
+        <div className="flex-1 flex flex-col overflow-hidden bg-gradient-to-br from-gray-950 via-purple-950/10 to-gray-950">
+          {generatedResult && (
+            <>
+              {/* Header with Editable Prompt */}
+              <div className="flex-shrink-0 p-6 bg-gray-900/50 border-b border-gray-800">
+                <div className="max-w-6xl mx-auto space-y-4">
+                  <div className="flex items-center gap-3 text-green-400 mb-4">
+                    <div className="w-10 h-10 rounded-full bg-green-600 flex items-center justify-center">
                       ✓
                     </div>
-                    <h3 className="text-xl font-bold">Video Generated Successfully!</h3>
+                    <h2 className="text-2xl font-bold">Video Generated Successfully!</h2>
                   </div>
 
-                  {/* Generated Info */}
-                  <div className="space-y-3 text-sm">
-                    <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-sm font-medium text-gray-300">
+                      <Edit3 size={16} />
+                      <span>Original Prompt (editable)</span>
+                    </div>
+                    <textarea
+                      value={generatorPrompt}
+                      onChange={(e) => setGeneratorPrompt(e.target.value)}
+                      className="w-full h-24 bg-gray-950 text-gray-100 text-sm p-4 rounded-lg border border-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+                      placeholder="Edit your original prompt and regenerate..."
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Settings & Scene Preview */}
+              <div className="flex-1 overflow-y-auto p-6">
+                <div className="max-w-6xl mx-auto space-y-6">
+                  {/* Settings Panel */}
+                  <div className="bg-gray-900/50 backdrop-blur-sm rounded-xl p-6 border border-gray-800">
+                    <div className="flex items-center gap-2 mb-4">
+                      <Settings size={20} className="text-purple-400" />
+                      <h3 className="text-lg font-semibold">Project Settings</h3>
+                    </div>
+                    <div className="grid grid-cols-4 gap-4 text-sm">
                       <div>
-                        <div className="text-gray-500">Project Name</div>
+                        <div className="text-gray-500 mb-1">Project Name</div>
                         <div className="text-white font-medium">{generatedResult.projectName}</div>
                       </div>
                       <div>
-                        <div className="text-gray-500">Scenes Created</div>
+                        <div className="text-gray-500 mb-1">Scenes</div>
                         <div className="text-white font-medium">{generatedResult.scenes.length} scenes</div>
                       </div>
                       <div>
-                        <div className="text-gray-500">Aspect Ratio</div>
+                        <div className="text-gray-500 mb-1">Aspect Ratio</div>
                         <div className="text-white font-medium">{generatedResult.aspectRatio}</div>
                       </div>
                       <div>
-                        <div className="text-gray-500">Voice-Over Mode</div>
+                        <div className="text-gray-500 mb-1">Voice-Over</div>
                         <div className="text-white font-medium">{generatedResult.voiceOverMode === 'global' ? 'Global' : 'Per Scene'}</div>
                       </div>
                     </div>
-
                     {generatedResult.backgroundAudio && (
-                      <div>
-                        <div className="text-gray-500">Background Music</div>
-                        <div className="text-white">{generatedResult.backgroundAudio}</div>
+                      <div className="mt-4 pt-4 border-t border-gray-800">
+                        <div className="text-gray-500 text-sm mb-1">Background Music</div>
+                        <div className="text-white text-sm">{generatedResult.backgroundAudio}</div>
                       </div>
                     )}
                   </div>
 
-                  {/* Scene Preview */}
-                  <div className="space-y-2">
-                    <div className="text-gray-400 text-sm font-medium">Generated Scenes:</div>
-                    <div className="space-y-2 max-h-60 overflow-y-auto">
+                  {/* Scene Preview Grid */}
+                  <div>
+                    <h3 className="text-lg font-semibold mb-4">Generated Scenes</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {generatedResult.scenes.map((scene, i) => (
-                        <div key={scene.id} className="bg-gray-950 p-3 rounded border border-gray-800">
+                        <div key={scene.id} className="bg-gray-900/50 backdrop-blur-sm rounded-xl p-4 border border-gray-800 hover:border-purple-500/50 transition-all">
                           <div className="flex items-start gap-3">
-                            <div className="w-6 h-6 rounded-full bg-purple-600 flex items-center justify-center text-xs flex-shrink-0">
+                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center text-sm font-bold flex-shrink-0">
                               {i + 1}
                             </div>
-                            <div className="flex-1 space-y-1">
-                              <div className="text-xs text-gray-300">{scene.prompt}</div>
+                            <div className="flex-1 space-y-2">
+                              <div className="text-sm text-gray-300 leading-relaxed">{scene.prompt}</div>
                               {scene.voiceOver && (
-                                <div className="text-xs text-purple-400 flex items-center gap-1">
-                                  <Mic size={10} />
-                                  {scene.voiceOver}
+                                <div className="text-xs text-purple-400 flex items-center gap-1 bg-purple-950/30 px-2 py-1 rounded">
+                                  <Mic size={12} />
+                                  <span>{scene.voiceOver}</span>
                                 </div>
                               )}
+                              {scene.captions && (
+                                <div className="text-xs text-yellow-400 flex items-center gap-1 bg-yellow-950/30 px-2 py-1 rounded">
+                                  <Type size={12} />
+                                  <span>{scene.captions}</span>
+                                </div>
+                              )}
+                              <div className="flex items-center gap-3 text-xs text-gray-500">
+                                <span>{scene.duration}s</span>
+                                {scene.transition && <span>→ {scene.transition}</span>}
+                              </div>
                             </div>
-                            <div className="text-xs text-gray-500">{scene.duration}s</div>
                           </div>
                         </div>
                       ))}
                     </div>
                   </div>
                 </div>
+              </div>
 
-                {/* Action Buttons */}
-                <div className="flex gap-3 pt-4 border-t border-gray-800">
+              {/* Action Bar */}
+              <div className="flex-shrink-0 bg-gray-900 border-t border-gray-800 p-6">
+                <div className="max-w-6xl mx-auto flex gap-4">
                   <button
-                    onClick={loadGeneratedScenes}
-                    className="flex-1 px-6 py-3 bg-green-600 hover:bg-green-700 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors">
-                    <Eye size={16} />
-                    Load Scenes into Editor
+                    onClick={() => setViewMode('generator')}
+                    className="px-6 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg font-medium transition-colors flex items-center gap-2">
+                    <ArrowLeft size={18} />
+                    Back to Generator
                   </button>
                   <button
-                    onClick={() => setGeneratedResult(null)}
-                    className="px-6 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg font-medium transition-colors">
-                    Generate New
+                    onClick={() => {
+                      generateVideoWithAI(generatorPrompt)
+                    }}
+                    disabled={generating}
+                    className="px-6 py-3 bg-purple-600 hover:bg-purple-700 rounded-lg font-medium transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <RefreshCw size={18} className={generating ? 'animate-spin' : ''} />
+                    {generating ? 'Regenerating...' : 'Regenerate with Changes'}
+                  </button>
+                  <button
+                    onClick={loadGeneratedScenes}
+                    className="flex-1 px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 rounded-lg font-medium transition-all flex items-center justify-center gap-2 shadow-lg">
+                    <Eye size={18} />
+                    Continue to Timeline Editor
                   </button>
                 </div>
               </div>
-            )}
-          </div>
+            </>
+          )}
         </div>
       ) : viewMode === 'json' ? (
         /* JSON Editor View */
