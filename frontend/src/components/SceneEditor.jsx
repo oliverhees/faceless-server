@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import { Plus, Trash2, Music, Type, Play, Download, Mic, Speaker, ArrowLeft, Save, X, Code, Eye, Image, Link } from 'lucide-react'
+import { Plus, Trash2, Music, Type, Play, Download, Mic, Speaker, ArrowLeft, Save, X, Code, Eye, Image, Link, Sparkles } from 'lucide-react'
 import { templateAPI } from '../services/api'
 
 export default function SceneEditor({ template, onBack }) {
@@ -12,11 +12,16 @@ export default function SceneEditor({ template, onBack }) {
   const [globalVoiceOver, setGlobalVoiceOver] = useState(template?.globalVoiceOver || '')
   const [backgroundAudio, setBackgroundAudio] = useState(template?.backgroundAudio || '')
   const [aspectRatio, setAspectRatio] = useState(template?.aspectRatio || '9:16') // '9:16' or '16:9'
-  const [viewMode, setViewMode] = useState('timeline') // 'timeline', 'sceneDetail', or 'json'
+  const [viewMode, setViewMode] = useState('timeline') // 'timeline', 'sceneDetail', 'generator', or 'json'
   const [jsonCode, setJsonCode] = useState('')
   const [jsonError, setJsonError] = useState(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
+
+  // Generator states
+  const [generatorPrompt, setGeneratorPrompt] = useState('')
+  const [generating, setGenerating] = useState(false)
+  const [generatedResult, setGeneratedResult] = useState(null)
 
   const scenesScrollRef = useRef(null)
   const timelineScrollRef = useRef(null)
@@ -63,6 +68,153 @@ export default function SceneEditor({ template, onBack }) {
 
   const backToTimeline = () => {
     setViewMode('timeline')
+  }
+
+  // Mock AI Video Generator
+  const generateVideoWithAI = async (userPrompt) => {
+    setGenerating(true)
+
+    // Simulate API call delay
+    await new Promise(resolve => setTimeout(resolve, 2000))
+
+    const prompt = userPrompt.toLowerCase()
+    let result = null
+
+    // Scenario 1: Ring/Doorbell Camera Videos
+    if (prompt.includes('ring') || prompt.includes('doorbell') || prompt.includes('camera')) {
+      const sceneCount = parseInt(prompt.match(/\d+/)?.[0]) || 3
+      result = {
+        projectName: 'Ring Camera Compilation',
+        voiceOverMode: 'global',
+        globalVoiceOver: '',
+        backgroundAudio: 'Suspenseful music, mysterious atmosphere',
+        aspectRatio: '9:16',
+        scenes: Array.from({ length: sceneCount }, (_, i) => ({
+          id: i + 1,
+          prompt: prompt.includes('tornado') && prompt.includes('monkey')
+            ? `Ring doorbell camera footage showing a tornado approaching in the distance, debris flying including a monkey being carried by the wind, realistic security camera style, timestamp visible`
+            : `Ring doorbell camera footage showing unusual activity at front door, security camera perspective, timestamp visible, scene ${i + 1}`,
+          duration: 8,
+          voiceOver: '',
+          captions: `Ring Video ${i + 1}`,
+          transition: 'fade',
+          referenceImage: '',
+          useLastFrameAsReference: false
+        }))
+      }
+    }
+    // Scenario 2: Story with Voice-Over
+    else if (prompt.includes('story') || prompt.includes('erzähl') || prompt.includes('boy') || prompt.includes('junge')) {
+      const durationMatch = prompt.match(/(\d+)\s*(minute|min|sekunden|sec)/i)
+      const totalDuration = durationMatch ? parseInt(durationMatch[1]) * 60 : 60
+      const sceneCount = Math.ceil(totalDuration / 10)
+
+      result = {
+        projectName: 'Boy Searching for Dragons',
+        voiceOverMode: 'scene',
+        globalVoiceOver: '',
+        backgroundAudio: 'Epic fantasy orchestral music, mysterious and adventurous',
+        aspectRatio: '16:9',
+        scenes: Array.from({ length: sceneCount }, (_, i) => {
+          const storyParts = [
+            { prompt: 'A young boy with a backpack walking into a dense, mystical forest, golden sunlight filtering through trees', voice: 'Once upon a time, there was a brave young boy who dreamed of finding dragons.' },
+            { prompt: 'Boy looking at ancient dragon claw marks on a massive tree trunk, expression of wonder and excitement', voice: 'He searched deep in the forest, following ancient signs and mysterious clues.' },
+            { prompt: 'Boy discovering a hidden cave entrance covered in vines, magical glow coming from inside', voice: 'Until one day, he found something extraordinary...' },
+            { prompt: 'Inside the cave, silhouettes of dragon wings visible in the shadows, boy approaching cautiously', voice: 'There, in the depths of the cave, his dreams were about to come true.' },
+            { prompt: 'Close-up of boy\'s face illuminated by dragon fire glow, awe and happiness in his eyes', voice: 'And he learned that some dreams are worth chasing.' }
+          ]
+          const part = storyParts[i % storyParts.length]
+          return {
+            id: i + 1,
+            prompt: part.prompt,
+            duration: 10,
+            voiceOver: part.voice,
+            captions: '',
+            transition: i === 0 ? 'fade' : 'dissolve',
+            referenceImage: '',
+            useLastFrameAsReference: i > 0
+          }
+        }).slice(0, sceneCount)
+      }
+    }
+    // Scenario 3: Top Facts / Listicle Format
+    else if (prompt.includes('top') || prompt.includes('fakt') || prompt.includes('fact') || prompt.includes('krass')) {
+      const countMatch = prompt.match(/(\d+)/)
+      const factCount = countMatch ? parseInt(countMatch[1]) : 5
+
+      const topic = prompt.includes('tiefsee') || prompt.includes('underwater') || prompt.includes('ocean')
+        ? 'deep sea creatures'
+        : 'amazing facts'
+
+      result = {
+        projectName: `Top ${factCount} ${topic}`,
+        voiceOverMode: 'scene',
+        globalVoiceOver: '',
+        backgroundAudio: 'Upbeat background music, energetic and engaging',
+        aspectRatio: '9:16',
+        scenes: Array.from({ length: factCount }, (_, i) => {
+          const deepSeaFacts = [
+            { creature: 'Anglerfish', fact: 'The anglerfish uses a bioluminescent lure growing from its head to attract prey in complete darkness.', prompt: 'Creepy anglerfish in deep ocean darkness, glowing lure visible, dramatic underwater cinematography' },
+            { creature: 'Giant Squid', fact: 'Giant squids have eyes the size of dinner plates - the largest eyes in the animal kingdom!', prompt: 'Massive giant squid swimming in deep water, enormous eye close-up, mysterious deep sea environment' },
+            { creature: 'Vampire Squid', fact: 'Despite its name, the vampire squid is actually harmless and feeds on marine snow and detritus.', prompt: 'Vampire squid floating in dark waters, tentacles spread showing defensive posture, red bioluminescent display' },
+            { creature: 'Barreleye Fish', fact: 'The barreleye fish has a transparent head that allows it to look upward through its skull!', prompt: 'Barreleye fish with transparent dome head, green eyes visible inside, swimming upward, surreal deep sea footage' },
+            { creature: 'Gulper Eel', fact: 'The gulper eel can swallow prey larger than itself thanks to its massive, expandable mouth.', prompt: 'Gulper eel with enormous mouth wide open, bioluminescent tail tip, swimming in pitch black waters' }
+          ]
+
+          const fact = deepSeaFacts[i % deepSeaFacts.length]
+          return {
+            id: i + 1,
+            prompt: fact.prompt,
+            duration: 12,
+            voiceOver: `Number ${i + 1}: ${fact.creature}. ${fact.fact}`,
+            captions: `#${i + 1} ${fact.creature}`,
+            transition: 'fade',
+            referenceImage: '',
+            useLastFrameAsReference: false
+          }
+        })
+      }
+    }
+    // Default fallback
+    else {
+      result = {
+        projectName: 'AI Generated Video',
+        voiceOverMode: 'global',
+        globalVoiceOver: 'A captivating story unfolds...',
+        backgroundAudio: 'Cinematic background music',
+        aspectRatio: '16:9',
+        scenes: [
+          {
+            id: 1,
+            prompt: userPrompt || 'Beautiful cinematic scene',
+            duration: 10,
+            voiceOver: '',
+            captions: '',
+            transition: 'fade',
+            referenceImage: '',
+            useLastFrameAsReference: false
+          }
+        ]
+      }
+    }
+
+    setGenerating(false)
+    setGeneratedResult(result)
+  }
+
+  const loadGeneratedScenes = () => {
+    if (!generatedResult) return
+
+    setProjectName(generatedResult.projectName)
+    setVoiceOverMode(generatedResult.voiceOverMode)
+    setGlobalVoiceOver(generatedResult.globalVoiceOver || '')
+    setBackgroundAudio(generatedResult.backgroundAudio || '')
+    setAspectRatio(generatedResult.aspectRatio || '9:16')
+    setScenes(generatedResult.scenes)
+    setSelectedScene(generatedResult.scenes[0]?.id || 1)
+    setViewMode('timeline')
+    setGeneratedResult(null)
+    setGeneratorPrompt('')
   }
 
   const getOutputDimensions = () => {
@@ -251,6 +403,14 @@ export default function SceneEditor({ template, onBack }) {
           {/* View Mode Toggle */}
           <div className="flex bg-gray-800 rounded overflow-hidden">
             <button
+              onClick={() => setViewMode('generator')}
+              className={`px-3 py-1.5 text-xs flex items-center gap-1.5 transition-colors ${
+                viewMode === 'generator' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'
+              }`}>
+              <Sparkles size={12} />
+              AI Generator
+            </button>
+            <button
               onClick={() => setViewMode('timeline')}
               className={`px-3 py-1.5 text-xs flex items-center gap-1.5 transition-colors ${
                 viewMode === 'timeline' || viewMode === 'sceneDetail' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'
@@ -313,7 +473,156 @@ export default function SceneEditor({ template, onBack }) {
         </div>
       )}
 
-      {viewMode === 'json' ? (
+      {viewMode === 'generator' ? (
+        /* AI Generator View */
+        <div className="flex-1 flex flex-col p-8 overflow-hidden items-center justify-center bg-gradient-to-br from-gray-950 via-purple-950/20 to-gray-950">
+          <div className="w-full max-w-3xl space-y-6">
+            {/* Header */}
+            <div className="text-center space-y-2">
+              <div className="flex items-center justify-center gap-2 text-purple-400">
+                <Sparkles size={32} />
+              </div>
+              <h2 className="text-3xl font-bold">AI Video Generator</h2>
+              <p className="text-gray-400">Describe your video idea and let AI create the complete scene structure</p>
+            </div>
+
+            {!generatedResult ? (
+              /* Input Form */
+              <div className="space-y-6 bg-gray-900/50 p-8 rounded-lg border border-gray-800">
+                <div className="space-y-3">
+                  <label className="text-sm font-medium text-gray-300">What kind of video do you want to create?</label>
+                  <textarea
+                    value={generatorPrompt}
+                    onChange={(e) => setGeneratorPrompt(e.target.value)}
+                    placeholder="Examples:&#10;• 3 Ring doorbell camera videos showing a tornado with flying monkeys&#10;• A 1 minute story about a boy searching for dragons in the forest&#10;• Top 5 creepiest deep sea creatures with facts&#10;• 10 second product showcase for a smart watch"
+                    className="w-full h-40 bg-gray-950 text-gray-100 p-4 rounded border border-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+                    disabled={generating}
+                  />
+                </div>
+
+                <button
+                  onClick={() => generateVideoWithAI(generatorPrompt)}
+                  disabled={generating || !generatorPrompt.trim()}
+                  className="w-full px-6 py-4 bg-purple-600 hover:bg-purple-700 rounded-lg text-lg font-medium flex items-center justify-center gap-3 transition-colors disabled:bg-gray-700 disabled:cursor-not-allowed">
+                  {generating ? (
+                    <>
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                      Generating with AI...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles size={20} />
+                      Generate Video Scenes
+                    </>
+                  )}
+                </button>
+
+                {/* Example Prompts */}
+                <div className="pt-4 border-t border-gray-800">
+                  <p className="text-xs text-gray-500 mb-2">Try these examples:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      '3 Ring videos with tornado and monkeys',
+                      'Story: boy searching for dragons, 1 minute',
+                      'Top 5 deep sea creature facts'
+                    ].map((example, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setGeneratorPrompt(example)}
+                        className="px-3 py-1 bg-gray-800 hover:bg-gray-700 rounded text-xs text-gray-300 transition-colors"
+                        disabled={generating}>
+                        {example}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              /* Generated Result Preview */
+              <div className="space-y-6 bg-gray-900/50 p-8 rounded-lg border border-purple-800/50">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3 text-green-400">
+                    <div className="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center">
+                      ✓
+                    </div>
+                    <h3 className="text-xl font-bold">Video Generated Successfully!</h3>
+                  </div>
+
+                  {/* Generated Info */}
+                  <div className="space-y-3 text-sm">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <div className="text-gray-500">Project Name</div>
+                        <div className="text-white font-medium">{generatedResult.projectName}</div>
+                      </div>
+                      <div>
+                        <div className="text-gray-500">Scenes Created</div>
+                        <div className="text-white font-medium">{generatedResult.scenes.length} scenes</div>
+                      </div>
+                      <div>
+                        <div className="text-gray-500">Aspect Ratio</div>
+                        <div className="text-white font-medium">{generatedResult.aspectRatio}</div>
+                      </div>
+                      <div>
+                        <div className="text-gray-500">Voice-Over Mode</div>
+                        <div className="text-white font-medium">{generatedResult.voiceOverMode === 'global' ? 'Global' : 'Per Scene'}</div>
+                      </div>
+                    </div>
+
+                    {generatedResult.backgroundAudio && (
+                      <div>
+                        <div className="text-gray-500">Background Music</div>
+                        <div className="text-white">{generatedResult.backgroundAudio}</div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Scene Preview */}
+                  <div className="space-y-2">
+                    <div className="text-gray-400 text-sm font-medium">Generated Scenes:</div>
+                    <div className="space-y-2 max-h-60 overflow-y-auto">
+                      {generatedResult.scenes.map((scene, i) => (
+                        <div key={scene.id} className="bg-gray-950 p-3 rounded border border-gray-800">
+                          <div className="flex items-start gap-3">
+                            <div className="w-6 h-6 rounded-full bg-purple-600 flex items-center justify-center text-xs flex-shrink-0">
+                              {i + 1}
+                            </div>
+                            <div className="flex-1 space-y-1">
+                              <div className="text-xs text-gray-300">{scene.prompt}</div>
+                              {scene.voiceOver && (
+                                <div className="text-xs text-purple-400 flex items-center gap-1">
+                                  <Mic size={10} />
+                                  {scene.voiceOver}
+                                </div>
+                              )}
+                            </div>
+                            <div className="text-xs text-gray-500">{scene.duration}s</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex gap-3 pt-4 border-t border-gray-800">
+                  <button
+                    onClick={loadGeneratedScenes}
+                    className="flex-1 px-6 py-3 bg-green-600 hover:bg-green-700 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors">
+                    <Eye size={16} />
+                    Load Scenes into Editor
+                  </button>
+                  <button
+                    onClick={() => setGeneratedResult(null)}
+                    className="px-6 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg font-medium transition-colors">
+                    Generate New
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      ) : viewMode === 'json' ? (
         /* JSON Editor View */
         <div className="flex-1 flex flex-col p-6 overflow-hidden">
           {jsonError && (
